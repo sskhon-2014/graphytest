@@ -378,7 +378,7 @@ bedtracks_widget = widgets.RadioButtons(
     disabled=False
 )
 other_bedtracks_widget = widgets.Text(
-    value="/Users/DarthRNA/Documents/Robin/FASTUTR/peaks.bed",
+    value=placeholder_file_bedfile,
     description="Other:",
     width="90%"
 )
@@ -476,6 +476,13 @@ button = widgets.Button(description="Graph!")
 display(button)
 def on_button_clicked(b):
     clear_output()
+
+    ## SANITY CHECKS ###
+    if not len(file_widget.value)>0:
+        print "ERROR: It's required to pick a .bam alignment!"
+        return
+    #####################
+
     if lookuptype_widget.value=="location":
         chrom,start,stop = ct.easylocation(location_widget.value)
         strand = strand_widget.value
@@ -496,12 +503,10 @@ def on_button_clicked(b):
         bedfile = other_bedtracks_widget.value
         bedtype = "bed"
         name = "Bedtrack"       
-    else:
+    elif bedtracks_widget.value == "Targetscan":
         bedtrack=True
         bedfile = bedfiles_allowed[bedtracks_widget.value]["bedfile"]
         if miRNA_widget.value == "ALL":
-            print bedtracks_widget.value
-            print bedfiles_allowed[bedtracks_widget.value]
             bedtype = bedfiles_allowed[bedtracks_widget.value]["bedtype"]
             name = bedfiles_allowed[bedtracks_widget.value]["name"]
         else:

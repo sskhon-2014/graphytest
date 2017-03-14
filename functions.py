@@ -45,7 +45,6 @@ def graphRefseq(refseqid,
     ylocation: Int or False
         change height of track (not used much)
     '''
-    print refseqid
 
     # If there is no gene to be found, return
     if refseqid=="None":
@@ -193,10 +192,19 @@ def graph_bed(bedfile,bedtype,name,chrom,start,stop,strand,stagger = False):
     '''
 
     if bedtype=="targetscan":
-        beddb = pd.read_table(bedfile,names=["chrom","start","stop","miRNA"],usecols=[0,1,2,3])
+        beddb = pd.read_table(bedfile, header=None)
+        if len(beddb.columns==9):
+            beddb.columns=["chrom","start","stop","miRNA","score","strand","start2","stop2","color"]
+        else:
+            beddb = beddb[0,1,2,3]
+            beddb.columns = ["chrom","start","stop","miRNA"]
         beddb_chrom = beddb[beddb.chrom==chrom]
         beddb_local = beddb_chrom[[(beddb_chrom.loc[i].start > start) and (beddb_chrom.loc[i].stop < stop) for i in beddb_chrom.index ]]
-        beddb_regions = beddb_local[beddb_local.miRNA==name]
+        # Check to see if we care about a single miRNA family or all of them.
+        if name == "Targetscan":
+            beddb_regions = beddb_local
+        else:
+            beddb_regions = beddb_local[beddb_local.miRNA==name]
         labels = beddb_regions.miRNA
     if bedtype=="custom":
         beddb = pd.read_table(bedfile,names=["chrom","start","stop","miRNA","zero","strand","geneid","extra"])
@@ -205,7 +213,7 @@ def graph_bed(bedfile,bedtype,name,chrom,start,stop,strand,stagger = False):
         beddb_regions = beddb_local
         labels = beddb_regions.miRNA
     if bedtype=="bed":
-        beddb = pd.read_table(bedfile, names =["chrom","start","stop","geneid","zero","strand"])
+        beddb = pd.read_table(bedfile, header=None,names =["chrom","start","stop","geneid","zero","strand"],usecols=[0,1,2,3,4,5])
         beddb_chrom = beddb[beddb.chrom==chrom]
         beddb_chrom = beddb[beddb.strand==strand]
         beddb_local = beddb_chrom[[(beddb_chrom.loc[i].start > start) and (beddb_chrom.loc[i].stop < stop) for i in beddb_chrom.index ]]
@@ -491,7 +499,6 @@ def plot(figwidth,figheight,refseqtrack,LeftToRight,strand,depths,
 
     # Build Bedtracks
     if bedtrack:
-        print bedfile, bedtype, name
         plt.subplot(gs[plotnumber.next()])
         bedregions,bedlabels =graph_bed(bedfile,bedtype,name,chrom,start,stop,strand,stagger=staggerbed)
         cur_axes = plt.gca()
@@ -560,22 +567,22 @@ def plot(figwidth,figheight,refseqtrack,LeftToRight,strand,depths,
         cur_axes.invert_xaxis()
 
     if bedtrack:
-        if annotate_bed:
             # Remove duplicate bed entries
             bedannotations = zip(bedlabels,bedregions)
             bedannotations.sort()
             bedannotations = list(i for i,_ in itertools.groupby(bedannotations))
-
+            print "-----\nRegions\n-----"
             for label,x in bedannotations:
                 print label,x
-                plt.annotate(
-                    label, 
-                    xy = (np.mean(x), 0), xytext = (0, -15),
-                    textcoords = 'offset points', ha = 'right', va = 'top',
-                    rotation = 45,
-                    bbox = dict(boxstyle = 'round,pad=0.5', fc = 'yellow', alpha = 0.5),
-                    arrowprops = dict(arrowstyle = '-', connectionstyle = 'arc3,rad=0')
-                    )
+                if annotate_bed:
+                    plt.annotate(
+                        label, 
+                        xy = (np.mean(x), 0), xytext = (0, -45),
+                        textcoords = 'offset points', ha = 'right', va = 'top',
+                        rotation = 45,
+                        bbox = dict(boxstyle = 'round,pad=0.5', fc = 'yellow', alpha = 0.5),
+                        arrowprops = dict(arrowstyle = '-', connectionstyle = 'arc3,rad=0')
+                        )
 
     #plt.tight_layout(pad=0.4, w_pad=0.5, h_pad=0.2)
     plt.savefig("%s%s%s.%s"% (output_folder,geneid,outputsuffix,outputformat),

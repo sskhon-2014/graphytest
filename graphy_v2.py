@@ -30,6 +30,8 @@ from ipywidgets import FloatSlider
 from IPython.display import clear_output
 
 
+updates = "3/23/17: Now the tracks are displayed in the order they were selected!"
+
 ###################################################
 
 
@@ -201,6 +203,7 @@ location_widget.observe(update_geneid, 'value')
 strand_widget.observe(update_geneid, 'value')
 geneid_widget.observe(update_refseqid,'value')
 
+display(widgets.HTML(value="<h5>Updates:</h5><p>" + updates))
 display(widgets.HTML(value="<h3>Select Region</h3>"))
 
 ### Define INTERACT: All interdependent widgets must be in here ###
@@ -217,27 +220,38 @@ interact(printer,
 
 ### Select File ###
 all_files = os.listdir(default_track_folder)
-file_locations = {}
-global file_locations
 file_types = ["bam","bw"]
+file_names = []
 for f in all_files:
     if f.split(".")[-1] in file_types:
-        file_locations[f] = default_track_folder+f
+        file_names.append(f)
 file_widget = widgets.SelectMultiple(
-    options=file_locations.keys(),
+    options=file_names,
     disabled=False
 )
 
 def update_antisense_check(*args):
     if len(file_widget.value)==0:
         w_as_selectors.layout.display="none"
+        w_antisense_check.options = []
     if len(file_widget.value)>0:
         w_as_selectors.layout.display=""
-        w_antisense_check.options = [i for i in file_widget.value if ".bam" in i]
+        # Add or remove from antisence_check.options
+        options = w_antisense_check.options
+        for i in file_widget.value:
+            if not i in options:
+                options.append(i)
+        for i in options:
+            if not i in file_widget.value:
+                options.remove(i)
+        w_antisense_check.options = options
+
+
 
 file_widget.observe(update_antisense_check,'value')
 
 w_aschecktitle= widgets.HTML("Are any of these tracks antisense?")
+# The antisense_check box is also holding the order of the files selected
 w_antisense_check = widgets.SelectMultiple(
     options=[]
 )
@@ -341,8 +355,16 @@ w_filesuffix = widgets.Text(
 w_outputfolder = widgets.Text(
     value="/Users/DarthRNA/Documents/Robin/TrackImages/",
     description="Output Folder",
-    width="90%",
+    width="80%",
 )
+w_outputfolder_valid = widgets.Valid(value=True)
+hboxoutputfolder = widgets.HBox([w_outputfolder,w_outputfolder_valid])
+def output_folder_check(*args):
+    if os.path.isdir(w_outputfolder.value) and w_outputfolder.value[-1] == "/" :
+        w_outputfolder_valid.value=True
+    else:
+        w_outputfolder_valid.value=False
+w_outputfolder.observe(output_folder_check,'value')
 
 
 ### Color Selectors ###
@@ -442,16 +464,15 @@ def update_filelist(*args):
         print w_default_folder.value
         track_folder = w_default_folder.value
         all_files = os.listdir(track_folder)
-        global file_locations
-        file_locations = {}
+        file_names = []
         file_types = ["bam","bw"]
         for f in all_files:
             if f.split(".")[-1] in file_types:
-                file_locations[f] = track_folder+f
-        file_widget.options = file_locations.keys()
+                file_names.append(f)
+        file_widget.options = file_names
     else:
         w_default_folder_valid.value=False
-        file_locations = {}
+        file_names = []
         file_widget.options =[]
 w_default_folder.observe(update_filelist,'value')
 
@@ -465,7 +486,7 @@ display(widgets.HTML(value="<h4>Color Picker</h4>"))
 display(selectors_color)
 display(widgets.HTML(value="<h4>Output Format</h4>"))
 display(selectors2)
-display(w_outputfolder)
+display(hboxoutputfolder)
 display(widgets.HTML(value="<br><br>"))
 
 accord.selected_index=1 #starts the accordian closed.
@@ -513,17 +534,17 @@ def on_button_clicked(b):
             bedtype = "targetscan"
             name = miRNA_widget.value
     track_type=[]
-    for t in file_widget.value:
+    for t in w_antisense_check.options:
         if t in w_antisense_check.value:
             track_type.append("as")
         else:
             track_type.append("s")
     geneid= geneid_widget.value
     refseqid = refseqid_widget.value
-    track_names = [f for f in file_widget.value if f.split(".")[-1]=="bam"]
-    bigwignames = [f for f in file_widget.value if f.split(".")[-1]=="bw"]
-    track_files = [file_locations[f] for f in track_names]
-    bigwigfiles = [file_locations[f] for f in bigwignames]
+    track_names = [f for f in w_antisense_check.options if f.split(".")[-1]=="bam"]
+    bigwignames = [f for f in w_antisense_check.options if f.split(".")[-1]=="bw"]
+    track_files = [w_default_folder.value + f for f in track_names]
+    bigwigfiles = [w_default_folder.value + f for f in bigwignames]
     depths = get_depth_data(track_files,track_names,chrom,start,stop,strand,track_type)
     wig_df_list = get_wig_data(bigwigfiles,bigwignames,chrom,start,stop)
     
@@ -540,8 +561,8 @@ def on_button_clicked(b):
     axis_off= not w_boundingbox.value
     fontsize = w_fontsize.value
     legend = w_legend.value
-    figheight = 5
-    output_folder = "/Users/DarthRNA/Documents/Robin/TrackImages/"
+    figheight = 2.5*len(w_antisense_check.options)
+    output_folder = w_outputfolder.value
 
     color_values = [w_cp1.value,w_cp2.value,w_cp3.value]
     shade = itertools.cycle(color_values)

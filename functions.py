@@ -68,26 +68,6 @@ def graphRefseq(refseqid,
 
 
     
-    if strand:
-        if (strand == "+"):
-            mark = ">"
-        elif strand == "-":
-            mark = "<"
-        else:
-            raise KeyError
-        if xlim:
-            plt.xlim(xlim)
-            framesize = xlim[1]-xlim[0]
-            dashedtraingleline = np.arange(xlim[0],xlim[1],(framesize/10))
-        else:
-            framesize = wholeLength[1]-wholeLength[0]
-            dashedtraingleline = np.arange(wholeLength[0],wholeLength[1],(framesize/10))
-        plt.plot(dashedtraingleline,[ylocation]*len(dashedtraingleline),
-                 mark,
-                 markersize = 4,
-                 markeredgecolor="white",
-                 color="white",
-                )
 
 
 
@@ -160,7 +140,27 @@ def graphRefseq(refseqid,
     for e in thick_bars:
         plt.plot(e,yvals,linewidth=20,color="b",solid_capstyle="butt")
     
-    
+    if strand:
+        if (strand == "+"):
+            mark = ">"
+        elif strand == "-":
+            mark = "<"
+        else:
+            raise KeyError
+        if xlim:
+            plt.xlim(xlim)
+            framesize = xlim[1]-xlim[0]
+            dashedtraingleline = np.arange(xlim[0],xlim[1],(framesize/10))
+        else:
+            framesize = wholeLength[1]-wholeLength[0]
+            dashedtraingleline = np.arange(wholeLength[0],wholeLength[1],(framesize/10))
+        plt.plot(dashedtraingleline,[ylocation]*len(dashedtraingleline),
+                 mark,
+                 markersize = 4,
+                 markeredgecolor="white",
+                 color="white",
+                )
+
 
 #     cur_axes = plt.gca()
 #     cur_axes.axes.get_xaxis().set_visible(True)
@@ -486,11 +486,12 @@ def plot(figwidth,figheight,refseqtrack,LeftToRight,strand,depths,
         plt.xlim(limits)
         cur_axes_rna.append(plt.gca())
         cur_axes_rna[n].axes.get_xaxis().set_visible(False)
+        cur_axes_rna[n].axes.get_yaxis().set_ticks(cur_axes_rna[n].get_ylim())
         if axis_off:
             cur_axes_rna[n].axes.axis("off")
         if invert:  
             cur_axes_rna[n].invert_xaxis()
-        plt.tick_params(labelsize=8)
+        plt.tick_params(labelsize=fontsize)
         if legend:
             red_patch = mpatches.Patch(color=color, label=track_names[n])
             plt.legend(handles=[red_patch],fontsize=fontsize)
@@ -541,6 +542,7 @@ def plot(figwidth,figheight,refseqtrack,LeftToRight,strand,depths,
         graphRefseq(refseqid,
             xlim=limits,
             strand=strand)
+        plt.ylabel(chrom,rotation=0,horizontalalignment="right",verticalalignment="center")
         cur_axes = plt.gca()
 
 
@@ -562,6 +564,7 @@ def plot(figwidth,figheight,refseqtrack,LeftToRight,strand,depths,
         cur_axes.axes.spines['right'].set_visible(False)
         cur_axes.axes.spines['bottom'].set_visible(False)
         cur_axes.axes.spines['left'].set_visible(False)
+        plt.xticks(visible=False)
 
     if invert:
         cur_axes.invert_xaxis()
@@ -587,6 +590,7 @@ def plot(figwidth,figheight,refseqtrack,LeftToRight,strand,depths,
     #plt.tight_layout(pad=0.4, w_pad=0.5, h_pad=0.2)
     plt.savefig("%s%s%s.%s"% (output_folder,geneid,outputsuffix,outputformat),
                 format=outputformat,
-               dpi =dpi)
+                bbox_inches='tight',
+                dpi =dpi)
     return plt
 

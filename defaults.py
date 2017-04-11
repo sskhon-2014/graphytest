@@ -7,4 +7,4 @@ default_track_folder = "/Users/DarthRNA/Documents/Robin/GRAPHY_TEST/"
 
 
 # Placeholder defaults
-placeholder_file_bedfile = "/Users/DarthRNA/Documents/Robin/RK53/Analysis/3_Aligned/Bed/mmu-miR-29a-3p.bed"
+placeholder_file_bedfile = "/Users/DarthRNA/Documents/Robin/RK53/mmu-miR-29a-3p.bed"

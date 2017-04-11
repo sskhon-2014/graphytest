@@ -30,7 +30,10 @@ from ipywidgets import FloatSlider
 from IPython.display import clear_output
 
 
-updates = "3/23/17: Now the tracks are displayed in the order they were selected!"
+updates = "\
+3/23/17: Now the tracks are displayed in the order they were selected! <p> \
+4/11/17: Added custom section to bedfiles. Covers custom bedfiles, including custom miRNA tracks\
+"
 
 ###################################################
 
@@ -59,6 +62,7 @@ bedfiles_allowed = {"Peaks":{"name":"Peaks",
 ### Lookup 3'UTR by Refseq
 df_refseq_3utr = pd.read_table("/Users/DarthRNA/Documents/Robin/genomes/mm10_refseq_3utr.bed",names=['chrom','start','stop','name','score','strand'])
 df_refseq_3utr.name = ["_".join(x.split("_")[0:2]) for x in df_refseq_3utr.name]
+df_refseq_3utr = df_refseq_3utr.drop_duplicates("name")
 df_refseq_3utr = df_refseq_3utr.set_index("name")
 
 ###################################################
@@ -395,7 +399,7 @@ selectors2 = widgets.HBox([w_xscale,
 
 ### MiRNA and Bedtrack Picker ###
 bedtracks_widget = widgets.RadioButtons(
-    options=["None"] + bedfiles_allowed.keys() + ["Other"],
+    options=["None"] + bedfiles_allowed.keys() + ["Custom","Other"],
     description='Bedfiles:',
     disabled=False
 )
@@ -420,6 +424,7 @@ def update_miRNAlist(*args):
         f = families.tolist()
         return sorted(f[1:])
     if bedtracks_widget.value=="Targetscan":
+        miRNA_widget.description = "miRNA Family"
         miRNAwrapper.layout.display=""
         tsfamilies = get_targetscan_families(bedfiles_allowed[bedtracks_widget.value]["bedfile"])
         miRNA_widget.options = ["ALL"] + tsfamilies
@@ -429,7 +434,23 @@ def update_miRNAlist(*args):
         miRNAwrapper.layout.display="none"
         miRNA_widget.options = ["None"]
         miRNA_widget.value = "None"
-
+    if bedtracks_widget.value=="Custom":
+        miRNAwrapper.layout.display=""
+        if os.path.isdir(w_default_folder.value) and w_default_folder.value[-1] == "/" :
+            w_default_folder_valid.value=True
+            track_folder = w_default_folder.value
+            all_files = os.listdir(track_folder)
+            file_names = []
+            file_types = ["bed"]
+            for f in all_files:
+                if f.split(".")[-1] in file_types:
+                    file_names.append(f)
+            miRNA_widget.options = file_names
+            miRNA_widget.description = "Bedfile"
+        else:
+            w_default_folder_valid.value=False
+            file_names = []
+            miRNA_widget.options =[]
 # def update_bedfile_other(*args):
 #     if bedtracks_widget.value == "Other":
 
@@ -533,6 +554,11 @@ def on_button_clicked(b):
         else:
             bedtype = "targetscan"
             name = miRNA_widget.value
+    elif bedtracks_widget.value == "Custom":
+        bedtrack=True
+        bedfile = w_default_folder.value+miRNA_widget.value
+        bedtype = "bed"
+        name = miRNA_widget.value
     track_type=[]
     for t in w_antisense_check.options:
         if t in w_antisense_check.value:
